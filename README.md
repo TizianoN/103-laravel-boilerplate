@@ -7,58 +7,172 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
-## About Laravel
+## Init project
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+1. Installa le dipendenze di frontend
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+```
+npm install
+```
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+2. Fai partire il compilatore per i file di frontend
 
-## Learning Laravel
+```
+npm run dev
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+3. Installa le dipendenze di backend in un nuovo terminale
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```
+composer install
+```
 
-## Laravel Sponsors
+4. Fai partire il server di sviluppo backend
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+```
+php artisan serve
+```
 
-### Premium Partners
+5. Copia il file `.env.example` e chiamalo `.env`. Poi esegui il comando per generare la chiave
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+```
+php artisan key:generate
+```
 
-## Contributing
+## Connessione al DB
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+1. Avvio MAMP
 
-## Code of Conduct
+2. Apro [PHPMyAdmin](http://localhost/phpMyAdmin/?lang=en)
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+3. Creo un nuovo DB (es. `103_rent`)
 
-## Security Vulnerabilities
+4. nel file `.env` aggiungo i parametri di connessione presenti sulla [pagina iniziale di MAMP](http://localhost/MAMP/)
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=103_rent
+DB_USERNAME=root
+DB_PASSWORD=root
+```
 
-## License
+## Creazione di una Migration
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Per creare una tabella lanciare il comando
+
+```
+php artisan make:migration create_houses_table
+```
+
+Aggiungi poi tutte le colonne che rappresentano la tabella nella funzione `up()`. I tipi di dato disponibili sono [qui](https://laravel.com/docs/9.x/migrations#available-column-types)
+
+```php
+// create_houses_table
+
+public function up()
+  {
+    Schema::create('houses', function (Blueprint $table) {
+      $table->id();
+      $table->tinyInteger('rooms')->unsigned();
+      $table->tinyInteger('bathrooms')->unsigned();
+      $table->smallInteger('square_meters')->unsigned();
+      $table->enum('type', ['appartment', 'independent', 'villa']);
+      $table->string('address', 100);
+      $table->string('city', 50);
+      $table->string('state', 50);
+      $table->string('zipcode', 15);
+      $table->text('description');
+      $table->float('price', 5, 2);
+      $table->timestamps();
+    });
+  }
+```
+
+Eseguo la migrazione appena creata con il comando
+
+```
+php artisan migrate
+```
+
+## Aggiunta di dati
+
+Aggiungo un paio di righe da [PHPMyAdmin](http://localhost/phpMyAdmin/?lang=en) per visualizzare dati di esempio
+
+## Creazione di un Model
+
+Creo un Model che rappresenti la tabella appena realizzata con il comando
+
+```
+php artisan make:model House
+```
+
+## Creazione di un Controller per la risorsa
+
+Creo un Controller per la risorsa `House` con il comando
+
+```
+php artisan make:controller HouseController
+```
+
+Importo il controller nel file `routes/web.php` per assegnargli delle rotte
+
+```php
+// web.php
+
+use App\Http\Controllers\HouseController;
+
+// ...
+
+// # Rotte risorsa house
+Route::get('/house', [HouseController::class, 'index'])->name('house.index');
+```
+
+Realizzo una funzione contenente la logica del metodo legato in `routes/web.php` dentro il controller `HouseController.php`. Dovremo
+
+1. importare il modello `House`
+2. nel metodo `index()` recuperare tutte gli elementi della tabella e passarli ad una vista
+
+```php
+// HouseController.php
+
+use App\Models\House;
+
+// ...
+
+class HouseController extends Controller
+{
+  public function index()
+  {
+    $houses = House::all();
+    return view('house.index', compact('houses'));
+  }
+}
+```
+
+## Creazione di una vista per visualizzare i dati
+
+creo un file `resources\views\house\index.blade.php` e estendo il layout `app.blade.php`.
+In un forelse stamperò tutti i dati ricevuti
+
+```php
+@extends('layouts.app')
+
+@section('main-content')
+  <section class="container mt-5">
+
+    @forelse($houses as $house)
+      <p>
+        <strong>Type</strong>: {{ $house->type }} <br>
+        <strong>Rooms</strong>: {{ $house->rooms }} <br>
+        <strong>Bathrooms</strong>: {{ $house->bathrooms }}
+      </p>
+      <hr>
+    @empty
+      <h2>Non ci sono risultati</h2>
+    @endforelse
+  </section>
+@endsection
+
+```
